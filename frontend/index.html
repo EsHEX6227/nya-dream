@@ -1,0 +1,1531 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>喵梦 · 当梦想来敲门</title>
+<style>
+  :root { --bg:#0B1210; --card:#121B18; --line:#1E2C27; --fg:#E6F2EC; --dim:#7C8F88;
+          --key:#7CF0B4; --ok:#a6e3a1; --warn:#FBBF24; --bad:#F87171; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--fg);
+              font-family:"Microsoft YaHei",system-ui,sans-serif; }
+  #app { display:flex; flex-direction:column; height:100%; }
+  header { padding:14px 16px 10px; border-bottom:1px solid var(--line); flex:0 0 auto; }
+  h1 { margin:0; font-size:18px; letter-spacing:.5px; }
+  h1 span { color:var(--key); }
+  .sub { color:var(--dim); font-size:12px; margin-top:4px; }
+  main { flex:1 1 auto; overflow:auto; -webkit-overflow-scrolling:touch; }
+  .page { padding:14px; max-width:820px; margin:0 auto; }
+  .page[hidden] { display:none; }
+  nav { flex:0 0 auto; display:flex; border-top:1px solid var(--line); background:#0F1715;
+        padding-bottom:env(safe-area-inset-bottom); }
+  nav button { flex:1; padding:11px 0 12px; background:none; border:none; color:var(--dim);
+               font:inherit; font-size:13px; cursor:pointer; }
+  nav button.on { color:var(--key); font-weight:700; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px;
+          padding:14px; margin-bottom:12px; }
+  .card h2 { margin:0 0 10px; font-size:14px; color:var(--dim); font-weight:600; }
+  input,button,textarea { font:inherit; }
+  input[type=text],input[type=search],input[type=password],textarea { width:100%; padding:11px 12px; border-radius:10px;
+          border:1px solid var(--line); background:#0E1513; color:var(--fg); outline:none; }
+  textarea { min-height:44vh; line-height:1.65; resize:vertical; }
+  button.btn { padding:10px 16px; border-radius:10px; border:1px solid var(--line);
+               background:#16211D; color:var(--fg); cursor:pointer; }
+  button.primary { background:var(--key); color:#08210F; border:none; font-weight:700; }
+  button:disabled { opacity:.45; cursor:default; }
+  .row { display:flex; gap:9px; margin-top:10px; flex-wrap:wrap; }
+  .empty,.meta { color:var(--dim); font-size:12px; }
+  .tag { display:inline-block; font-size:11px; color:var(--dim); border:1px solid var(--line);
+         border-radius:999px; padding:2px 8px; margin:0 6px 6px 0; }
+  .item { padding:11px 12px; border:1px solid var(--line); border-radius:11px; margin-bottom:8px;
+          background:#0F1715; cursor:pointer; }
+  .item .n { font-size:14px; line-height:1.6; }
+  .item .m { color:var(--dim); font-size:11px; margin-top:4px; }
+  #graph { width:100%; height:60vh; display:block; background:#0A1210;
+           border:1px solid var(--line); border-radius:14px; touch-action:none; }
+  .graphwrap { position:relative; }
+  .graphbar { position:absolute; right:10px; bottom:10px; display:flex; gap:8px; }
+  .graphbar button { padding:7px 11px; font-size:12px; }
+  .md h2 { font-size:17px; color:var(--key); border-bottom:1px solid var(--line); padding-bottom:6px; }
+  .md h3 { font-size:15px; color:var(--warn); margin-top:14px; }
+  .md p,.md li { line-height:1.8; font-size:14px; }
+  .md code { background:#17211D; padding:1px 5px; border-radius:5px; font-size:12px; }
+  .md pre { background:#101815; border:1px solid var(--line); border-radius:10px; padding:12px; overflow:auto; }
+  .md blockquote { border-left:3px solid var(--key); margin:10px 0; padding:4px 12px; color:var(--dim); }
+  .md a { color:var(--ok); text-decoration:none; border-bottom:1px dotted var(--ok); }
+  .md hr { border:none; border-top:1px solid var(--line); margin:16px 0; }
+  .crumb { color:var(--dim); font-size:12px; margin-bottom:8px; cursor:pointer; }
+  .ok { color:var(--ok); } .warn { color:var(--warn); } .bad { color:var(--bad); }
+  .toast { position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:120;display:none;
+           background:#16211D;border:1px solid var(--line);border-radius:12px;padding:10px 14px;
+           font-size:13px;line-height:1.6;max-width:86vw;box-shadow:0 6px 24px #0008; }
+  header { position:relative; }
+  #qrOpen { position:absolute; right:14px; top:14px; padding:6px 12px; font-size:12px; }
+  #qrBox[hidden] { display:none !important; }
+  #qrImg { width:100%; max-width:280px; background:#fff; border-radius:12px; padding:8px; }
+  .chip { padding:7px 13px; border-radius:999px; border:1px solid var(--line);
+          background:rgba(15,23,21,.86); color:var(--dim); font-size:12px; cursor:pointer;
+          white-space:nowrap; }
+  .chip b { color:var(--fg); font-weight:700; }
+  .chip.on { background:var(--key); color:#08210F; border-color:transparent; font-weight:700; }
+  .chip.on b { color:#08210F; }
+  /* 「大家」页：铺满全屏，不滚动 */
+  body.spacefull header, body.spacefull footer { display:none; }
+  body.spacefull main { overflow:hidden; }
+  body.spacefull #p-everyone { padding:0; max-width:none; height:100%; }
+  #spaceWrap { position:relative; width:100%; height:100%; padding:8px; }
+  #space { width:100%; height:100%; display:block; background:#0A1210;
+           border:1px solid var(--line); border-radius:18px; touch-action:none; }
+  #roomChips { position:absolute; left:18px; right:18px; top:18px; display:flex; gap:8px; z-index:3; }
+  #spaceInfo { position:absolute; left:18px; right:18px; bottom:18px; z-index:3; font-size:12px;
+               color:var(--dim); background:rgba(11,18,16,.78); border-radius:11px; padding:8px 11px;
+               pointer-events:none; }
+  #spaceBack { position:absolute; inset:0; z-index:4; background:rgba(8,9,13,.45); border-radius:18px; }
+  #spaceBack[hidden] { display:none; }
+  #spaceDrawer { position:absolute; top:8px; right:8px; bottom:8px; width:78%; max-width:340px; z-index:5;
+                 background:#0F1715; border:1px solid var(--line); border-radius:18px; padding:14px;
+                 transform:translateX(108%); transition:transform .2s ease; overflow:auto; }
+  #spaceDrawer.on { transform:translateX(0); }
+  #spaceDrawer .dh { display:flex; align-items:center; justify-content:space-between;
+                     font-size:13px; color:var(--dim); margin-bottom:10px; }
+  #spaceDrawer .x { background:none; border:0; color:var(--dim); font-size:16px; cursor:pointer; }
+  .who { display:flex; align-items:center; gap:8px; padding:9px 10px; border:1px solid var(--line);
+         border-radius:11px; margin-bottom:8px; background:#0F1715; font-size:13px; }
+  #login[hidden],#acct[hidden] { display:none !important; }
+  .dot { display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:6px;
+         vertical-align:middle; background:#6E7F78; }
+  .dot.conn { background:var(--warn); animation:pulse 1s infinite; }
+  .dot.ok { background:var(--ok); }
+  .dot.bad { background:var(--bad); }
+  @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:.35 } }
+  #status.hit { cursor:pointer; }
+  /* 图谱页全屏：收起页头与卡片边距，画布铺满 */
+  body.graphfull header { display:none; }
+  body.graphfull #p-graph { padding:0; max-width:none; }
+  body.graphfull #p-graph .card { margin:0; padding:0; border:0; border-radius:0; background:transparent; }
+  body.graphfull #graph { height:calc(100vh - 52px); border:0; border-radius:0; }
+
+  /* 可选本地 AI：登录后问一次，可选跳过后不再烦 */
+  #aiAsk[hidden] { display:none !important; }
+  #aiAsk { position:fixed; inset:0; background:rgba(10,10,14,.94); z-index:110;
+           display:flex; align-items:center; justify-content:center; padding:20px; }
+  #aiAsk .card { max-width:430px; width:100%; }
+  #aiAsk code { background:#17211D; padding:1px 5px; border-radius:5px; font-size:12px; }
+  #aiOpen { position:absolute; right:96px; top:14px; padding:6px 12px; font-size:12px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>喵梦 <span>·</span> 当梦想来敲门</h1>
+    <div id="jsmark" style="color:#FBBF24;font-size:12px;margin-top:4px">
+      脚本没跑：手机浏览器多半开了省流／极速／无图模式，关掉它，或用 Chrome、Edge 重新打开本页。
+    </div>
+    <div class="sub" id="status"><span class="dot conn" id="connDot"></span><span id="connText">连接中 …</span></div>
+    <div class="sub" id="who" hidden></div>
+    <button class="btn" id="qrOpen">扫码给评委</button>
+  <button class="btn" id="aiOpen">接 AI</button>
+  </header>
+
+  <main>
+    <section class="page" id="p-today">
+      <div class="card">
+        <h2>写下你的梦想（一句话）</h2>
+        <input id="dream" type="text" placeholder="我想复习高数 / 我想在这个星期里打到三角洲陕西省省榜">
+        <div class="row">
+          <button class="btn primary" id="save">登记</button>
+          <button class="btn" id="refreshToday">刷新</button>
+          <button class="btn" id="genPush">手动敲门</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>今天的视频 <span class="meta" id="feedIndex"></span></h2>
+        <div id="videoBox" class="empty">正在取今天的视频 …</div>
+        <div class="row" id="videoActions" hidden>
+          <button class="btn" id="voteUp" data-vote="1">推 0</button>
+          <button class="btn" id="voteDown" data-vote="-1">踩 0</button>
+          <button class="btn primary" id="nextVideo">下一个</button>
+        </div>
+        <div class="meta" id="feedMsg" style="margin-top:8px"></div>
+      </div>
+
+      <div class="card">
+        <h2>桌面／手机通知</h2>
+        <div id="pushState" class="empty">未开启</div>
+        <div class="row">
+          <button class="btn primary" id="pushOn">开启通知</button>
+          <button class="btn" id="pushTest">发一条测试</button>
+        </div>
+        <div class="meta" style="margin-top:8px">
+          通知只在 HTTPS 下可用：手机请用 <span class="warn" id="pushUrl">https://&lt;这台电脑的局域网地址&gt;:8788/</span>，证书提示选「继续访问」。
+        </div>
+      </div>
+      <div class="card">
+        <h2>梦想清单</h2>
+        <div id="dreamList" class="empty">还没有登记</div>
+      </div>
+    </section>
+
+    <section class="page" id="p-graph" hidden>
+      <div class="card">
+        <h2>知识图谱 · 思维链</h2>
+        <div class="graphwrap">
+          <canvas id="graph"></canvas>
+          <div class="graphbar">
+            <button class="btn" id="gZoomIn">＋</button>
+            <button class="btn" id="gZoomOut">－</button>
+            <button class="btn" id="gReset">复位</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="page" id="p-notes" hidden>
+      <div class="card" id="noteListCard">
+        <h2>笔记（<span id="noteCount">0</span>）</h2>
+        <input id="q" type="search" placeholder="搜索文件名 …">
+        <div id="noteList" style="margin-top:10px"></div>
+      </div>
+      <div class="card" id="noteViewCard" hidden>
+        <div class="crumb" id="back">← 返回列表</div>
+        <div class="meta" id="noteMeta"></div>
+        <div class="md" id="noteBody" style="margin-top:8px"></div>
+        <div class="row">
+          <button class="btn" id="editBtn">编辑本篇（电脑端）</button>
+          <button class="btn primary" id="saveBtn" hidden>保存</button>
+          <button class="btn" id="cancelBtn" hidden>取消</button>
+        </div>
+        <textarea id="editor" hidden></textarea>
+        <div class="meta" id="editMsg" style="margin-top:8px"></div>
+      </div>
+    </section>
+
+    <section class="page" id="p-review" hidden>
+      <div class="card">
+        <h2>指标</h2>
+        <div id="metrics" class="empty">加载中 …</div>
+      </div>
+      <div class="card">
+        <h2>贡献格子（近 8 周）</h2>
+        <div id="grid"></div>
+        <div class="meta" style="margin-top:8px">越亮＝当天做完越多；灰＝有推送没做；暗格＝没推送</div>
+      </div>
+      <div class="card">
+        <h2>时间轴（最近 14 条）</h2>
+        <div id="timeline" class="empty">暂无</div>
+      </div>
+      <div class="card">
+        <h2>实时事件</h2>
+        <div id="sselog" class="meta" style="max-height:22vh;overflow:auto">等待连接 …</div>
+      </div>
+    </section>
+    <section class="page" id="p-everyone" hidden>
+      <div id="spaceWrap">
+        <canvas id="space"></canvas>
+        <div id="roomChips"></div>
+        <div id="spaceInfo"></div>
+        <div id="spaceBack" hidden></div>
+        <aside id="spaceDrawer">
+          <div class="dh"><span>最近互动过的人</span><button class="x" id="drawerClose">✕</button></div>
+          <div id="recentList" class="empty">还没有互动过</div>
+        </aside>
+      </div>
+    </section>
+    <footer id="footer" style="text-align:center;color:#7C8F88;font-size:12px;padding:10px 0 16px">
+    Nya-DREAM · <a href="/source" target="_blank" style="color:#a6e3a1">源码</a>
+    · <a href="/app" style="color:#7CF0B4">手机装 App</a>
+    · 代码以 AGPL-3.0 开源 · 素材仅提供链接
+  </footer>
+  </main>
+
+  <nav>
+    <button data-tab="today" class="on">今日</button>
+    <button data-tab="graph">图谱</button>
+    <button data-tab="notes">笔记</button>
+    <button data-tab="review">回顾</button>
+    <button data-tab="everyone">大家</button>
+  </nav>
+</div>
+
+<div id="login" hidden style="position:fixed;inset:0;background:rgba(10,10,14,.92);z-index:99;align-items:center;justify-content:center;padding:20px">
+  <div class="card" style="max-width:380px;width:100%">
+    <h2>这台机器的访问口令</h2>
+    <div class="meta" style="margin-bottom:8px">口令在电脑端启动时打印，也在 <code>data/config.json</code> 里。输入一次，这台设备就记住了。</div>
+    <input id="token" type="text" placeholder="输入口令">
+    <div class="row"><button class="btn primary" id="loginBtn">进去</button></div>
+    <div class="meta" id="loginMsg" style="margin-top:8px"></div>
+  </div>
+</div>
+
+<div id="qrBox" hidden style="position:fixed;inset:0;background:rgba(10,10,14,.94);z-index:110;align-items:center;justify-content:center;padding:20px">
+  <div class="card" style="max-width:400px;width:100%;text-align:center">
+    <h2 style="font-size:15px;color:var(--key)">手机 / 评委扫这个</h2>
+    <div class="meta" style="margin-bottom:10px">同一 WiFi（或你开的热点）下，扫码就能打开网页版，不用装任何东西；想装 App 就点下面那个入口。</div>
+    <img id="qrImg" alt="二维码">
+    <div class="meta" id="qrUrl" style="margin-top:10px;word-break:break-all"></div>
+    <div class="row" style="justify-content:center">
+      <button class="btn" id="qrApp">装 App 的入口</button>
+      <button class="btn primary" id="qrClose">关闭</button>
+    </div>
+  </div>
+</div>
+
+<div id="acct" hidden style="position:fixed;inset:0;background:rgba(10,10,14,.94);z-index:100;align-items:center;justify-content:center;padding:20px">
+  <div class="card" style="max-width:380px;width:100%">
+    <h2>先给自己起个名字</h2>
+    <div class="meta" style="margin-bottom:8px">账号只存在这台电脑的 <code>data/miaomeng.db</code> 里，不上传：用来在推送里认出你、记住你推过哪条。填一次，这台设备就记住了。</div>
+    <input id="acctName" type="text" placeholder="用户名（2 到 16 个字）" autocomplete="username">
+    <input id="acctPw" type="password" placeholder="密码（至少 6 位）" autocomplete="current-password" style="margin-top:8px">
+    <div class="row">
+      <button class="btn primary" id="acctLogin">登录</button>
+      <button class="btn" id="acctReg">注册新账号</button>
+    </div>
+    <div class="row">
+      <button class="btn" id="acctGuest" style="width:100%">先随便看看（游客一键进入）</button>
+    </div>
+    <div class="meta" id="acctMsg" style="margin-top:8px"></div>
+  </div>
+</div>
+
+<div id="aiAsk" hidden>
+  <div class="card">
+    <h2>要不要接一个本地 AI？（可选）</h2>
+    <div class="meta" style="margin-bottom:10px">
+      不接也能用：拆解走内置规则层。「一句梦想 → 三个马上能动手的方向」由模型来做的话更准，
+      模型跑在你这台电脑上，不联网、不上传。
+      <br>推荐 <a href="https://github.com/ollama/ollama" target="_blank" rel="noreferrer"
+      style="color:var(--key)">Ollama</a>：装好后跑 <code>ollama pull qwen2.5:7b</code> 就行。
+    </div>
+    <input id="aiBase" type="text" placeholder="接口地址，例如 http://127.0.0.1:11434/v1">
+    <input id="aiKey" type="password" placeholder="API Key（本地模型一般留空）" style="margin-top:8px">
+    <input id="aiModel" type="text" placeholder="模型名（可留空，自动取第一个）" style="margin-top:8px">
+    <div class="row">
+      <button class="btn primary" id="aiOk">确定</button>
+      <button class="btn" id="aiSkip">跳过</button>
+    </div>
+    <div class="meta" id="aiMsg" style="margin-top:8px"></div>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const jsmark = document.getElementById('jsmark'); if (jsmark) jsmark.remove();
+const NL = String.fromCharCode(10);
+window.onerror = (m, src, line, col) => {
+  const d = document.createElement('div');
+  d.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:99;background:#F87171;color:#08210F;font-size:12px;padding:8px 10px';
+  d.textContent = '页面脚本报错：' + m + ' @' + line + ':' + col;
+  document.body.appendChild(d);
+};
+const api = async (p, o) => {
+  let r = await fetch(p, o);
+  if (r.status === 401) {
+    let why = {};
+    try { why = await r.clone().json(); } catch (e) {}
+    const ok = why.need_login ? await askAccount() : await askToken();
+    if (ok) r = await fetch(p, o);
+  }
+  if (!r.ok) throw new Error(r.status + ' ' + r.statusText);
+  return r.json();
+};
+function askToken() {
+  return new Promise(resolve => {
+    const box = document.getElementById('login');
+    box.hidden = false;
+    box.style.display = 'flex';
+    document.getElementById('loginMsg').textContent = '';
+    document.getElementById('loginBtn').onclick = async () => {
+      const t = document.getElementById('token').value.trim();
+      if (!t) return;
+      try {
+        const r = await fetch('/api/token_login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: t }) });
+        if (r.ok) { box.hidden = true; resolve(true); }
+        else { document.getElementById('loginMsg').innerHTML = '<span class="warn">口令不对</span>'; }
+      } catch (e) { document.getElementById('loginMsg').textContent = '失败：' + e.message; }
+    };
+  });
+}
+
+/* 账号门槛：没有 mm_user 时，后端对 /api、/events 一律 401 need_login。
+   这里是最小入口：注册 / 登录 / 退出。并发 401 共用同一个浮层。 */
+let acctPending = null;
+function askAccount() {
+  if (acctPending) return acctPending;
+  acctPending = new Promise(resolve => {
+    const box = document.getElementById('acct');
+    const msg = document.getElementById('acctMsg');
+    const name = document.getElementById('acctName');
+    const pw = document.getElementById('acctPw');
+    box.hidden = false; box.style.display = 'flex';
+    msg.textContent = '';
+    const done = u => {
+      box.hidden = true; msg.textContent = ''; acctPending = null;
+      showWho(u); resolve(true);
+    };
+    const send = async path => {
+      const body = { username: name.value.trim(), password: pw.value };
+      if (!body.username || !body.password) {
+        msg.innerHTML = '<span class="warn">用户名和密码都要填</span>'; return;
+      }
+      msg.textContent = '正在连电脑端 …';
+      try {
+        const r = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                     body: JSON.stringify(body) });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) { msg.innerHTML = '<span class="warn">' + (j.msg || ('失败 ' + r.status)) + '</span>'; return; }
+        let me = null;
+        try { const m = await fetch('/api/me'); if (m.ok) me = await m.json(); } catch (e) {}
+        pw.value = '';
+        done(me || j.user || { username: body.username });
+      } catch (e) {
+        msg.innerHTML = '<span class="warn">连不上电脑端：' + e.message + '</span>';
+      }
+    };
+    document.getElementById('acctLogin').onclick = () => send('/api/login');
+    document.getElementById('acctReg').onclick = () => send('/api/register');
+    document.getElementById('acctGuest').onclick = async () => {
+      msg.textContent = '正在准备一个游客身份 …';
+      try {
+        const r = await fetch('/api/guest', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) { msg.innerHTML = '<span class="warn">' + (j.msg || ('失败 ' + r.status)) + '</span>'; return; }
+        let me = null;
+        try { const m = await fetch('/api/me'); if (m.ok) me = await m.json(); } catch (e) {}
+        pw.value = '';
+        done(me || j.user || { username: '游客' });
+      } catch (e) {
+        msg.innerHTML = '<span class="warn">连不上电脑端：' + escq(e.message) + '</span>';
+      }
+    };
+    pw.onkeydown = e => { if (e.key === 'Enter') send('/api/login'); };
+    name.focus();
+  });
+  return acctPending;
+}
+function showWho(u) {
+  const el = document.getElementById('who');
+  MY = (u && u.username) ? u : null;
+  if (!MY) { el.hidden = true; return; }
+  el.hidden = false;
+  el.innerHTML = '<span style="color:' + (u.color || '#E6F2EC') + '">●</span> ' + u.username +
+                 ' · <a href="#" id="logout" style="color:#7C8F88">退出</a>';
+  document.getElementById('logout').onclick = async e => {
+    e.preventDefault();
+    try { await fetch('/api/logout', { method: 'POST' }); } catch (x) {}
+    location.reload();
+  };
+}
+async function ensureAccount() {
+  try {
+    const r = await fetch('/api/me');
+    if (r.ok) { showWho(await r.json()); return true; }
+  } catch (e) { return true; }   /* 电脑端没起来：让页面自己去报错，不要卡在浮层 */
+  /* ?guest=1：直接开一个游客身份，用于投屏／演示／截图，不弹登录框 */
+  if (/[?&]guest=1\b/.test(location.search)) {
+    try {
+      const g = await fetch('/api/guest', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+      if (g.ok) {
+        let me = null;
+        try { const m = await fetch('/api/me'); if (m.ok) me = await m.json(); } catch (e) {}
+        showWho(me || { username: '游客' });
+        return true;
+      }
+    } catch (e) {}
+  }
+  return await askAccount();
+}
+
+/* 扫码给评委：二维码是电脑端自己现场生成的，不走任何第三方 */
+function qrOpen() {
+  const box = document.getElementById('qrBox');
+  box.hidden = false; box.style.display = 'flex';
+  const img = document.getElementById('qrImg'), txt = document.getElementById('qrUrl');
+  txt.textContent = '正在取地址 …';
+  api('/api/scan').then(s => {
+    img.src = s.qr;
+    txt.innerHTML = '<b>' + escq(s.url) + '</b>' + (s.has_qr ? '' : '<br><span class="warn">服务端没装二维码库，请把上面的网址手输到手机</span>');
+    document.getElementById('qrApp').onclick = () => { location.href = '/app'; };
+  }).catch(e => { txt.textContent = '取地址失败：' + e.message; });
+}
+document.getElementById('qrOpen').onclick = qrOpen;
+document.getElementById('qrClose').onclick = () => { document.getElementById('qrBox').hidden = true; };
+document.getElementById('qrBox').onclick = e => {
+  if (e.target && e.target.id === 'qrBox') document.getElementById('qrBox').hidden = true;
+};
+
+const jpost = (p, b) => api(p, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(b || {}) });
+
+/* 顶部状态灯 */
+let hbTimer = 0, hbFails = 0;
+function setConn(state, text) {
+  const dot = document.getElementById('connDot');
+  dot.className = 'dot ' + (state === 'ok' ? 'ok' : (state === 'fail' ? 'bad' : 'conn'));
+  document.getElementById('connText').textContent = text;
+}
+async function health() {
+  if (hbFails === 0) setConn('wait', '连接中 … 正在探测电脑端主程序');
+  try {
+    const h = await api('/health');
+    hbFails = 0;
+    setConn('ok', '已连接电脑端 · 笔记 ' + h.notes + ' 篇 · 梦想 ' + h.dreams + ' 条 · ' + h.time);
+  } catch (e) {
+    hbFails++;
+    setConn('fail', '连接失败（第 ' + hbFails + ' 次）· ' + e.message + ' · 5 秒后重试');
+  }
+  clearTimeout(hbTimer);
+  hbTimer = setTimeout(health, 5000);
+}
+document.getElementById('status').onclick = () => { hbFails = 0; health(); };
+
+/* tab 切换 */
+/* tab 切换（支持地址后缀 #graph / #notes / #review，通知点开也能直达） */
+const TAB_NAMES = ['today', 'graph', 'notes', 'review', 'everyone'];
+function activateTab(name, updateHash) {
+  if (TAB_NAMES.indexOf(name) < 0) name = 'today';
+  document.querySelectorAll('nav button').forEach(x => x.classList.toggle('on', x.dataset.tab === name));
+  document.querySelectorAll('.page').forEach(p => p.hidden = true);
+  document.getElementById('p-' + name).hidden = false;
+  document.body.classList.toggle('graphfull', name === 'graph');
+  if (name === 'graph') startGraph();
+  if (name === 'review') loadReview();
+  document.body.classList.toggle('spacefull', name === 'everyone');
+  if (name === 'everyone') loadSpace();
+  if (updateHash && location.hash !== '#' + name) location.hash = '#' + name;
+}
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => activateTab(b.dataset.tab, true));
+window.addEventListener('hashchange', () => activateTab((location.hash || '').replace('#', ''), false));
+
+/* 今日 */
+let cur = null;
+async function loadDreams() {
+  const rows = await api('/api/dreams');
+  const box = document.getElementById('dreamList');
+  if (!rows.length) { box.innerHTML = '<div class="empty">还没有登记</div>'; return; }
+  box.innerHTML = rows.map(d => {
+    let k = {};
+    try { k = JSON.parse(d.keywords || '{}'); } catch (e) {}
+    const tags = (k.tags || []).map(t => '<span class="tag">' + t + '</span>').join('');
+    return '<div class="item" style="cursor:default"><div class="n">' + d.text + '</div>' +
+      '<div style="margin-top:6px">' + tags + '</div>' +
+      '<div class="m">' + (k.domain || '') + ' · ' + (k.horizon || '') + ' · ' + d.created_at + '</div></div>';
+  }).join('');
+}
+/* 今天的视频：一天 5 条随机，看完了点「下一个」就作数；只有正在放的这条能推 / 踩 */
+let FEED = { items: [], cur: null, total: 0 };
+function feedRender() {
+  const box = document.getElementById('videoBox');
+  const acts = document.getElementById('videoActions');
+  const idx = document.getElementById('feedIndex');
+  const msg = document.getElementById('feedMsg');
+  const cur = FEED.cur;
+  if (!cur) {
+    box.className = 'empty';
+    box.textContent = FEED.total ? '今天的看完了，明天再来' : '今天还没有视频';
+    acts.hidden = true;
+    idx.textContent = '';
+    msg.textContent = FEED.total ? ('今天 ' + FEED.total + ' 条都看过了')
+                                 : '点上面的「手动敲门」，或者等电脑端自己抓';
+    return;
+  }
+  box.className = '';
+  const v = cur.votes || {};
+  box.innerHTML =
+    '<a href="' + escq(cur.url) + '" target="_blank" style="color:var(--ok)">' + escq(cur.title) + '</a>' +
+    '<div class="meta" style="margin-top:6px">' + escq(cur.author || '') + ' · ' +
+    (cur.duration || '?') + ' 秒 · ' + escq(cur.tag || '') + '</div>' +
+    '<div style="margin-top:8px"><iframe style="width:100%;height:230px;border:0;border-radius:10px" ' +
+    'src="https://player.bilibili.com/player.html?bvid=' + escq(cur.bvid) + '&autoplay=0" allowfullscreen></iframe></div>';
+  acts.hidden = false;
+  document.getElementById('voteUp').textContent = '推 ' + (v.up || 0);
+  document.getElementById('voteDown').textContent = '踩 ' + (v.down || 0);
+  idx.textContent = '第 ' + (FEED.total - FEED.items.length + 1) + ' / ' + FEED.total + ' 条';
+  msg.textContent = v.mine ? ('你投过' + (v.mine > 0 ? '推' : '踩')) : '看完了就点「下一个」';
+}
+async function loadTodayVideo() {
+  try {
+    let q = await api('/api/queue');
+    if (!q.items || !q.items.length) {          /* 今天还没抓过：让电脑端去抓 */
+      await jpost('/api/queue/gen?n=5');
+      q = await api('/api/queue');
+    }
+    /* 只看今天随机抓到的那几条（channel=queue），一天就 5 条 */
+    const all = (q.items || []).filter(x => (x.channel || 'queue') === 'queue')
+                               .sort((a, b) => a.id - b.id)
+                               .slice(0, 5);
+    FEED.items = all.filter(x => !x.done);       /* 今天还要看的（已经看过的不再出现） */
+    FEED.total = FEED.items.length;
+    FEED.cur = FEED.items[0] || null;
+    document.getElementById('feedMsg').className = 'meta';
+  } catch (e) {
+    FEED.cur = null; FEED.items = [];
+    document.getElementById('feedMsg').className = 'meta';
+    document.getElementById('feedMsg').innerHTML = '<span class="warn">取视频失败：' + escq(e.message) + '</span>';
+    document.getElementById('videoBox').textContent = '取不到视频';
+    document.getElementById('videoActions').hidden = true;
+  }
+  feedRender();
+}
+async function feedNext() {
+  const cur = FEED.cur;
+  if (!cur) return;
+  const btn = document.getElementById('nextVideo');
+  btn.disabled = true;
+  try { await jpost('/api/action', { push_id: cur.id, action: 'done' }); } catch (e) {}
+  FEED.items = FEED.items.filter(x => x.id !== cur.id);
+  FEED.cur = FEED.items[0] || null;
+  btn.disabled = false;
+  feedRender();
+  loadReview();
+}
+document.getElementById('nextVideo').onclick = feedNext;
+document.getElementById('videoActions').addEventListener('click', async e => {
+  const btn = e.target && e.target.closest ? e.target.closest('button[data-vote]') : null;
+  if (!btn || !FEED.cur) return;
+  btn.disabled = true;
+  try {
+    const r = await jpost('/api/vote', { push_id: FEED.cur.id, vote: +btn.dataset.vote });
+    if (r && r.tally) FEED.cur.votes = r.tally;
+    feedRender();
+  } catch (err) { alert('没投成：' + err.message); }
+  btn.disabled = false;
+});
+document.getElementById('save').onclick = async () => {
+  const text = document.getElementById('dream').value.trim(); if (!text) return;
+  try {
+    const d = await jpost('/api/dreams', { text });
+    const k = JSON.parse(d.keywords);
+    document.getElementById('dream').value = '';
+    await loadDreams(); await health();
+    alert('已登记：' + d.text + NL + '归类：' + k.domain + ' / ' + k.horizon + NL + '关键词：' + (k.keywords || []).join('、'));
+  } catch (e) { alert('登记失败：' + e.message); }
+};
+document.getElementById('refreshToday').onclick = () => { loadDreams(); loadTodayVideo(); health(); };
+
+document.getElementById('genPush').onclick = async () => {
+  try {
+    const g = await jpost('/api/push/gen');
+    if (g.ok) { await loadTodayVideo(); alert('已敲门：' + g.push.title + '（' + g.push.duration + ' 秒）'); }
+    else alert('没推成：' + (g.err || '未知'));
+  } catch (e) { alert('失败：' + e.message); }
+};
+/* 「做了」「跳过」已去掉：点「下一个」就是看完了，自动记一笔 done */
+
+/* 笔记 */
+let NOTES = [];
+async function loadNotes() {
+  NOTES = await api('/api/notes');
+  document.getElementById('noteCount').textContent = NOTES.length;
+  renderNotes();
+}
+function renderNotes() {
+  const q = (document.getElementById('q').value || '').toLowerCase();
+  const rows = NOTES.filter(n => !q || n.rel.toLowerCase().includes(q));
+  document.getElementById('noteList').innerHTML = rows.length ? rows.map(n =>
+    '<div class="item" data-rel="' + n.rel + '"><div class="n">' + n.name + '</div>' +
+    '<div class="m">' + n.rel + ' · ' + Math.round(n.size / 1024) + ' KB · ' + n.mtime + '</div></div>').join('')
+    : '<div class="empty">没有匹配的笔记</div>';
+  document.querySelectorAll('#noteList .item').forEach(el => el.onclick = () => openNote(el.dataset.rel));
+}
+document.getElementById('q').oninput = renderNotes;
+
+function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function mdInline(s) {
+  return s
+    .replace(/\[\[([^\]\|]+)(?:\|([^\]]+))?\]\]/g, (m, p1, p2) =>
+      '<a href="#" class="wiki" data-name="' + p1.trim() + '">' + (p2 || p1).trim() + '</a>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\[([^\]]+)\]\((https?:[^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+}
+function renderMd(src) {
+  const lines = esc(src).split(/\r?\n/);
+  let out = [], inCode = false, inList = false;
+  for (const raw of lines) {
+    if (/^```/.test(raw)) { out.push(inCode ? '</code></pre>' : '<pre><code>'); inCode = !inCode; continue; }
+    if (inCode) { out.push(raw); continue; }
+    const l = mdInline(raw);
+    if (/^#{1,6}\s/.test(raw)) { const h = raw.match(/^#+/)[0].length; out.push((h <= 1 ? '<h2>' : '<h3>') + l.replace(/^#+\s/, '') + (h <= 1 ? '</h2>' : '</h3>')); continue; }
+    if (/^&gt;\s?/.test(l)) { out.push('<blockquote>' + l.replace(/^&gt;\s?/, '') + '</blockquote>'); continue; }
+    if (/^(-{3,}|\*{3,})$/.test(raw.trim())) { out.push('<hr>'); continue; }
+    if (/^\s*[-*+]\s+/.test(raw)) {
+      if (!inList) { out.push('<ul>'); inList = true; }
+      out.push('<li>' + l.replace(/^\s*[-*+]\s+/, '') + '</li>'); continue;
+    }
+    if (inList) { out.push('</ul>'); inList = false; }
+    if (!raw.trim()) continue;
+    out.push('<p>' + l + '</p>');
+  }
+  if (inList) out.push('</ul>');
+  if (inCode) out.push('</code></pre>');
+  return out.join(NL);
+}
+let curNote = null;
+async function openNote(rel) {
+  const d = await api('/api/notes/' + encodeURI(rel));
+  curNote = d;
+  document.getElementById('noteListCard').hidden = true;
+  document.getElementById('noteViewCard').hidden = false;
+  document.getElementById('noteMeta').textContent = d.rel + ' · 双链 ' + d.links.length + ' 条';
+  document.getElementById('noteBody').innerHTML = renderMd(d.text);
+  document.getElementById('editor').hidden = true;
+  document.getElementById('saveBtn').hidden = true;
+  document.getElementById('cancelBtn').hidden = true;
+  document.getElementById('editBtn').hidden = false;
+  document.getElementById('editMsg').textContent = '';
+  document.querySelectorAll('.wiki').forEach(a => a.onclick = e => {
+    e.preventDefault();
+    const nm = a.dataset.name;
+    const hit = NOTES.find(n => n.name === nm || n.name === nm + '.md' || n.rel.endsWith('/' + nm + '.md'));
+    if (hit) openNote(hit.rel); else alert('库里没有这篇：' + nm);
+  });
+  document.querySelector('main').scrollTop = 0;
+}
+document.getElementById('back').onclick = () => {
+  document.getElementById('noteViewCard').hidden = true;
+  document.getElementById('noteListCard').hidden = false;
+};
+document.getElementById('editBtn').onclick = () => {
+  if (!curNote) return;
+  document.getElementById('editor').value = curNote.text;
+  document.getElementById('editor').hidden = false;
+  document.getElementById('saveBtn').hidden = false;
+  document.getElementById('cancelBtn').hidden = false;
+  document.getElementById('editBtn').hidden = true;
+  document.getElementById('editMsg').textContent = '保存会写回本地 md，服务端自动备份到 data/backup/。';
+};
+document.getElementById('cancelBtn').onclick = () => {
+  document.getElementById('editor').hidden = true;
+  document.getElementById('saveBtn').hidden = true;
+  document.getElementById('cancelBtn').hidden = true;
+  document.getElementById('editBtn').hidden = false;
+};
+document.getElementById('saveBtn').onclick = async () => {
+  try {
+    const r = await jpost('/api/notes/' + encodeURI(curNote.rel), { text: document.getElementById('editor').value });
+    document.getElementById('editMsg').innerHTML = '<span class="ok">已保存</span>';
+    await loadNotes(); await openNote(curNote.rel);
+  } catch (e) { document.getElementById('editMsg').innerHTML = '<span class="bad">保存失败：' + e.message + '</span>'; }
+};
+
+/* 图谱 */
+const G = { nodes: [], links: [], scale: 1, tx: 0, ty: 0, alpha: 1, running: false, loaded: false };
+async function loadGraph() {
+  const g = await api('/api/graph');
+  const cv = document.getElementById('graph');
+  const W = cv.clientWidth || 320, H = cv.clientHeight || 320;
+  G.nodes = g.nodes.map((n, i) => Object.assign({}, n, {
+    x: W / 2 + Math.cos(i * 0.7) * (50 + (i % 9) * 14),
+    y: H / 2 + Math.sin(i * 0.7) * (50 + (i % 9) * 14), vx: 0, vy: 0
+  }));
+  const idx = {}; G.nodes.forEach(n => idx[n.id] = n);
+  G.links = g.links.filter(l => idx[l.source] && idx[l.target]).map(l => ({ s: idx[l.source], t: idx[l.target] }));
+  const deg = {}; G.links.forEach(l => { deg[l.s.id] = (deg[l.s.id] || 0) + 1; deg[l.t.id] = (deg[l.t.id] || 0) + 1; });
+  G.nodes.forEach(n => n.deg = deg[n.id] || 0);
+  G.loaded = true;
+}
+function fitCanvas() {
+  const cv = document.getElementById('graph'), r = window.devicePixelRatio || 1;
+  cv.width = cv.clientWidth * r; cv.height = cv.clientHeight * r;
+  cv.getContext('2d').setTransform(r, 0, 0, r, 0, 0);
+}
+/* 力导向参数：加速度与速度都设上限，靠近平衡点就「睡着」，就不抖了 */
+const SIM = {
+  REPULSE_R2: 22500,       // 斥力生效距离平方
+  REPULSE_K: 900,
+  SPRING_LEN: 52,
+  SPRING_K: 0.055,
+  CENTER_K: 0.0024,
+  DAMPING: 0.88,
+  A_MAX_START: 0.32,       // 起步允许的加速度
+  A_MAX_END: 0.032,        // 两秒后收敛到的加速度（上一版的十分之一）
+  V_MAX_START: 1.10,       // 起步允许的速度
+  V_MAX_END: 0.12,         // 两秒后收敛到的速度
+  RAMP_MS: 2800,           // 缓出时长：先快，逐步压下来（拉长到 2.8s，展开过程看得清）
+  SLEEP_V: 0.004,          // 阈值同步调小，否则一上来就休眠
+  ALPHA_DECAY: 0.997,
+  ALPHA_MIN: 0.02
+};
+let calmFrames = 0;
+
+function step() {
+  const cv = document.getElementById('graph');
+  const W = cv.clientWidth, H = cv.clientHeight, a = G.alpha;
+
+  // 1) 累加受力
+  for (let i = 0; i < G.nodes.length; i++) {
+    const n = G.nodes[i];
+    n.ax = 0; n.ay = 0;
+    for (let j = i + 1; j < G.nodes.length; j++) {
+      const m = G.nodes[j];
+      const dx = n.x - m.x, dy = n.y - m.y, d2 = dx * dx + dy * dy + 0.01;
+      if (d2 < SIM.REPULSE_R2) {
+        const f = SIM.REPULSE_K / d2;
+        n.ax += dx * f * a; n.ay += dy * f * a;
+        m.ax -= dx * f * a; m.ay -= dy * f * a;
+      }
+    }
+    n.ax += (W / 2 - n.x) * SIM.CENTER_K * a;
+    n.ay += (H / 2 - n.y) * SIM.CENTER_K * a;
+  }
+  for (const l of G.links) {
+    const dx = l.t.x - l.s.x, dy = l.t.y - l.s.y, d = Math.hypot(dx, dy) || 0.01;
+    const f = (d - SIM.SPRING_LEN) / d * SIM.SPRING_K * a;
+    l.s.ax += dx * f; l.s.ay += dy * f;
+    l.t.ax -= dx * f; l.t.ay -= dy * f;
+  }
+
+  // 2) 上限随「缓出曲线」变化：起步快，两秒内平滑压到最终值
+  const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+  let prog = G.rampAt ? Math.min(1, (now - G.rampAt) / SIM.RAMP_MS) : 1;
+  const ease = prog * prog * (3 - 2 * prog);                 // smoothstep：两头都平滑
+  const aMax = SIM.A_MAX_START + (SIM.A_MAX_END - SIM.A_MAX_START) * ease;
+  /* 布局还在铺开时把标签压暗（真实图谱应用都这么做）：
+     等节点散得差不多了再让标签浮出来，展开过程才看得清 */
+  G.labA = Math.min(1, Math.max(0, (prog - 0.30) / 0.70));
+  G.labA = G.labA * G.labA * (3 - 2 * G.labA);
+  const vMax = SIM.V_MAX_START + (SIM.V_MAX_END - SIM.V_MAX_START) * ease;
+
+  let energy = 0;
+  for (const n of G.nodes) {
+    const am = Math.hypot(n.ax || 0, n.ay || 0);
+    if (am > aMax) { const k = aMax / am; n.ax *= k; n.ay *= k; }
+    n.vx = (n.vx + n.ax) * SIM.DAMPING;
+    n.vy = (n.vy + n.ay) * SIM.DAMPING;
+    const vm = Math.hypot(n.vx, n.vy);
+    if (vm > vMax) { const k = vMax / vm; n.vx *= k; n.vy *= k; }
+    n.x += n.vx; n.y += n.vy;
+    energy += n.vx * n.vx + n.vy * n.vy;
+  }
+
+  // 3) 全场都慢下来就休眠，避免像素级抽搐
+  if (energy < SIM.SLEEP_V * G.nodes.length) {
+    calmFrames++;
+    if (calmFrames > 12) { G.alpha = SIM.ALPHA_MIN; G.resting = true; }
+  } else {
+    calmFrames = 0;
+    G.resting = false;
+  }
+  G.alpha = Math.max(SIM.ALPHA_MIN, G.alpha * SIM.ALPHA_DECAY);
+}
+function paint() {
+  const cv = document.getElementById('graph'), ctx = cv.getContext('2d');
+  const W = cv.clientWidth, H = cv.clientHeight;
+  ctx.clearRect(0, 0, W, H);
+  ctx.save(); ctx.translate(G.tx, G.ty); ctx.scale(G.scale, G.scale);
+  ctx.strokeStyle = 'rgba(140,146,170,.35)'; ctx.lineWidth = 1 / G.scale;
+  for (const l of G.links) { ctx.beginPath(); ctx.moveTo(l.s.x, l.s.y); ctx.lineTo(l.t.x, l.t.y); ctx.stroke(); }
+  for (const n of G.nodes) {
+    const r = 3 + Math.min(5, n.deg * 0.6);
+    ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+    ctx.fillStyle = n.id.includes('z日志') ? '#4ADE80' : (n.id.includes('YuJieKNR') ? '#7CF0B4' : '#a6e3a1');
+    ctx.fill();
+    if (G.scale > 0.75 || n.deg >= 3) {
+      const la = (typeof G.labA === 'number' ? G.labA : 1);
+      ctx.fillStyle = 'rgba(231,233,242,' + (0.72 * la).toFixed(3) + ')'; ctx.font = (10 / G.scale) + 'px Microsoft YaHei';
+      ctx.fillText(n.label.slice(0, 12), n.x + r + 2, n.y + 3);
+    }
+  }
+  ctx.restore();
+}
+function loop() {
+  if (!G.running) return;
+  step(); paint();
+  if (G.resting) { G.running = false; return; }   // 睡着就停下，别空转烧电
+  requestAnimationFrame(loop);
+}
+function wake(alpha) {
+  G.resting = false; calmFrames = 0;
+  G.alpha = Math.max(G.alpha, alpha || 0.5);
+  G.rampAt = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+  if (!G.running) { G.running = true; loop(); }
+}
+/* 只让物理继续跑，不重置缓出计时：给「拖球」这种真正要动物理的操作 */
+function resume(alpha) {
+  G.resting = false; calmFrames = 0;
+  G.alpha = Math.max(G.alpha, alpha || 0.2);
+  if (!G.running) { G.running = true; loop(); }
+}
+function startGraph() {
+  fitCanvas();
+  if (!G.loaded) loadGraph().then(() => wake(1));
+  else wake(0.4);
+}
+document.getElementById('gZoomIn').onclick = () => { G.scale = Math.min(3, G.scale * 1.2); paint(); };
+document.getElementById('gZoomOut').onclick = () => { G.scale = Math.max(0.25, G.scale / 1.2); paint(); };
+document.getElementById('gReset').onclick = () => { G.scale = 1; G.tx = 0; G.ty = 0; G.alpha = 1; paint(); };
+(function () {
+  const cv = document.getElementById('graph');
+  let drag = null, pinch = null, moved = 0;
+  const pos = e => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+  cv.addEventListener('pointerdown', e => { if (cv.setPointerCapture) cv.setPointerCapture(e.pointerId); drag = pos(e); moved = 0; });
+  cv.addEventListener('pointermove', e => {
+    if (!drag) return;
+    const p = pos(e), dx = p.x - drag.x, dy = p.y - drag.y;
+    moved += Math.abs(dx) + Math.abs(dy);
+    if (drag.node) { drag.node.x += dx / G.scale; drag.node.y += dy / G.scale; resume(0.15); }
+    else { G.tx += dx; G.ty += dy; }
+    drag = { x: p.x, y: p.y, node: drag.node };
+    paint();
+  });
+  cv.addEventListener('pointerup', e => {
+    if (drag && moved < 6) {
+      const p = pos(e), x = (p.x - G.tx) / G.scale, y = (p.y - G.ty) / G.scale;
+      const hit = G.nodes.find(n => Math.hypot(n.x - x, n.y - y) < 12 / G.scale);
+      if (hit) {
+        const note = NOTES.find(n => n.rel === hit.id);
+        document.querySelector('nav button[data-tab=notes]').click();
+        if (note) openNote(note.rel);
+      }
+    }
+    drag = null;
+  });
+  cv.addEventListener('wheel', e => { e.preventDefault(); G.scale = Math.max(0.25, Math.min(3, G.scale * (e.deltaY < 0 ? 1.1 : 0.9))); paint(); }, { passive: false });
+  cv.addEventListener('touchmove', e => {
+    if (e.touches.length === 2) {
+      const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+      if (pinch) { G.scale = Math.max(0.25, Math.min(3, G.scale * (d / pinch))); paint(); }
+      pinch = d;
+    }
+  }, { passive: true });
+  cv.addEventListener('touchend', () => { pinch = null; });
+  window.addEventListener('resize', () => { fitCanvas(); paint(); });
+})();
+
+/* 回顾 */
+function levelColor(cell) {
+  if (!cell.pushes) return '#0F1715';
+  if (!cell.done) return '#1E2C27';
+  return cell.done >= 2 ? '#a6e3a1' : '#4e9d7a';
+}
+async function loadReview() {
+  try {
+    const r = await api('/api/review');
+    document.getElementById('metrics').innerHTML =
+      '<div>连续天数 <b class="ok">' + r.streak + '</b>　完成率 <b>' + Math.round(r.done_rate * 100) + '%</b>（' +
+      r.done + '/' + r.pushes + '）　断档回归率 <b class="warn">' + Math.round(r.return_rate * 100) + '%</b>（' +
+      r.returns + '/' + r.gaps + '）</div>';
+    document.getElementById('grid').innerHTML = '<div style="display:grid;grid-template-columns:repeat(14,1fr);gap:3px">' +
+      r.grid.map(c => '<div title="' + c.date + ' 推 ' + c.pushes + ' 做 ' + c.done +
+        '" style="aspect-ratio:1;border-radius:3px;background:' + levelColor(c) + '"></div>').join('') + '</div>';
+    document.getElementById('timeline').innerHTML = r.timeline.length ? r.timeline.map(t =>
+      '<div class="item" style="cursor:default"><div class="n">' + (t.done ? '✅' : (t.skipped ? '⏭' : '⬜')) + ' ' +
+      t.title + '</div><div class="m">' + t.date + ' · ' + t.duration + ' 秒 · ' + t.author +
+      ' · <a href="' + t.url + '" target="_blank" style="color:var(--ok)">原链接</a></div></div>').join('')
+      : '<div class="empty">还没有推送</div>';
+  } catch (e) {
+    document.getElementById('metrics').innerHTML = '<span class="bad">读取失败：' + e.message + '</span>';
+  }
+}
+
+/* 大家 · 互动空间：铺满屏幕的房间 + 匀速滑动的小球（跟图谱页互不干扰） */
+let MY = null;
+/* 名字叫 escq：文件里已有一个给 markdown 用的 esc()，重名会让整个脚本报 SyntaxError */
+const escq = s => String(s == null ? '' : s).replace(/[&<>"']/g,
+  c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function pokeToast(html, color) {
+  let box = document.getElementById('toast');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'toast'; box.className = 'toast';
+    document.body.appendChild(box);
+  }
+  box.innerHTML = (color ? '<span style="color:' + escq(color) + '">●</span> ' : '') + html;
+  box.style.display = 'block';
+  clearTimeout(box._t);
+  box._t = setTimeout(() => { box.style.display = 'none'; }, 4200);
+}
+
+const SPACE = { room: '自习室', rooms: ['自习室', '讨论间', '娱乐'], people: {}, names: {}, pairs: [],
+                balls: [], me: 0, sel: null, drag: null, raf: 0, heat: 0, ts: 0,
+                loaded: false, relHours: 24, relCount: 10, cssW: 0, cssH: 0, baseR: 14 };
+const ME_COLOR = '#E6F2EC';   /* 「我」在互动空间里的固定色 */
+const DEMO_COLORS = { '喵喵': '#3DDC84', '梦梦': '#22D3EE' };   /* 展示球：绿 / 青 */
+/* 匀速滑动：没有摩擦、没有居中牵引，速度大小恒定，只改方向 */
+const SPACE_SIM = {
+  SPEED: 0.5,           // 基准速度（像素/帧）：慢到"看得出来在动"就够
+  SPEED_JITTER: 0.3,    // 每个球速度略有不同，避免整场同步走
+  LINE_AT: 3,           // 同一个球互动满 3 次才连线；前两次只有缩放强调
+  SPRING_LEN: 96,       // 连上线的两球，会被拨向这个距离
+  SPRING_K: 0.05,       // 指向彼此的转向强度
+  CLICK_K: 1.7,         // 连上线之后，再点还会把速度拨向对方
+  PULSE_DECAY: 0.90,    // 缩放强调的回落速度
+  WALL_JITTER: 0.10,    // 反弹时的一点点随机角，避免两条直线来回死循环
+  MAX_DT: 2
+};
+function spaceCanvas() { return document.getElementById('space'); }
+function spaceFit() {
+  const cv = spaceCanvas();
+  if (!cv) return null;
+  const w = cv.clientWidth, h = cv.clientHeight;
+  if (!w || !h) return null;                       /* 页签没显示时量不到，等下一帧 */
+  const r = window.devicePixelRatio || 1;
+  cv.width = w * r; cv.height = h * r;
+  cv.getContext('2d').setTransform(r, 0, 0, r, 0, 0);
+  SPACE.cssW = w; SPACE.cssH = h;
+  SPACE.baseR = Math.max(13, Math.min(19, Math.min(w, h) * 0.035));   /* 屏幕大了球也跟着大一点 */
+  return cv;
+}
+function spaceSpeed() { return SPACE_SIM.SPEED + (Math.random() - 0.5) * SPACE_SIM.SPEED_JITTER; }
+function spaceDir(b, ang) {
+  b.speed = b.speed || spaceSpeed();
+  b.vx = Math.cos(ang) * b.speed;
+  b.vy = Math.sin(ang) * b.speed;
+}
+function spaceNorm(b) {
+  const v = Math.hypot(b.vx, b.vy) || 1;
+  b.vx = b.vx / v * (b.speed || SPACE_SIM.SPEED);
+  b.vy = b.vy / v * (b.speed || SPACE_SIM.SPEED);
+}
+function spaceSeed(i) {
+  const k = SPACE.room.length * 1.3 + i * 1.9;
+  return { x: SPACE.cssW / 2 + Math.cos(k) * (SPACE.cssW * 0.3),
+           y: SPACE.cssH / 2 + Math.sin(k * 1.7) * (SPACE.cssH * 0.3) };
+}
+function spacePair(id) {
+  const a = Math.min(id, SPACE.me), b = Math.max(id, SPACE.me);
+  return SPACE.pairs.find(p => p.a === a && p.b === b);
+}
+function spaceAgo(ts) {
+  if (!ts) return '还没互动过';
+  const s = Math.max(0, Date.now() / 1000 - ts);
+  if (s < 60) return '刚刚';
+  if (s < 3600) return Math.round(s / 60) + ' 分钟前';
+  if (s < 86400) return Math.round(s / 3600) + ' 小时前';
+  return Math.round(s / 86400) + ' 天前';
+}
+async function loadSpace() {
+  const [l, o] = await Promise.all([api('/api/links'), api('/api/online')]);
+  SPACE.me = l.me || 0;
+  SPACE.relHours = l.related_hours || 24;
+  SPACE.relCount = l.related_count || 10;
+  SPACE.pairs = l.items || [];
+  if (l.rooms && l.rooms.length) SPACE.rooms = l.rooms;
+  /* 谁在哪间：真人看服务端记的 room，展示球固定分配 */
+  SPACE.people = {};
+  (o.list || []).forEach(u => {
+    SPACE.people[u.id] = { name: u.username, color: u.color, room: u.room || SPACE.rooms[0],
+                           me: !!u.me, demo: false };
+  });
+  (l.demo || []).forEach(d => {
+    SPACE.people[d.id] = { name: d.username, color: DEMO_COLORS[d.username] || '#3DDC84',
+                           room: d.room || SPACE.rooms[0], demo: true, me: false };
+  });
+  if (SPACE.me && !SPACE.people[SPACE.me]) {
+    SPACE.people[SPACE.me] = { name: '我', color: '#E6F2EC', room: SPACE.room, me: true, demo: false };
+  }
+  if (SPACE.people[SPACE.me]) {
+    SPACE.people[SPACE.me].room = SPACE.room;      /* 我自己就在当前这间 */
+    SPACE.people[SPACE.me].color = ME_COLOR;      /* 「我」固定浅薄荷：满屋子绿点里一眼认出自己 */
+  }
+  /* 名字表：抽屉里要显示"最近互动过的人"，离线的人也得有名字 */
+  SPACE.names = {};
+  Object.keys(SPACE.people).forEach(k => SPACE.names[k] = SPACE.people[k]);
+  (l.people || []).forEach(p => SPACE.names[p.id] = { name: p.username, color: p.color });
+  (l.demo || []).forEach(d => SPACE.names[d.id] = { name: d.username, color: DEMO_COLORS[d.username] || '#3DDC84' });
+  spaceChips();
+  spaceBuild();
+  spaceInfo();
+  spaceStart();
+}
+function spaceChips() {
+  const box = document.getElementById('roomChips');
+  if (!box) return;
+  const key = SPACE.rooms.join(',');
+  if (box.dataset.built !== key) {
+    box.dataset.built = key;
+    box.innerHTML = SPACE.rooms.map(r =>
+      '<button class="chip" data-room="' + escq(r) + '">' + escq(r) + ' <b>0</b></button>').join('');
+    box.querySelectorAll('.chip').forEach(c => c.onclick = () => spaceEnter(c.dataset.room));
+  }
+  const count = {};
+  Object.keys(SPACE.people).forEach(k => {
+    const p = SPACE.people[k];
+    if (p) count[p.room] = (count[p.room] || 0) + 1;
+  });
+  box.querySelectorAll('.chip').forEach(c => {
+    const b = c.querySelector('b');
+    if (b) b.textContent = count[c.dataset.room] || 0;
+    c.classList.toggle('on', c.dataset.room === SPACE.room);
+  });
+}
+function spaceBuild() {
+  const cv = spaceFit();
+  if (!cv) { SPACE.raf = 0; return; }
+  const old = {}; SPACE.balls.forEach(b => old[b.id] = b);
+  const balls = [];
+  Object.keys(SPACE.people).forEach(k => {
+    const p = SPACE.people[k];
+    if (!p || p.room !== SPACE.room) return;
+    balls.push({ id: +k, name: p.name, color: p.color, mine: !!p.me, demo: !!p.demo });
+  });
+  balls.forEach((b, i) => {
+    const p = old[b.id] || spaceSeed(i);
+    b.x = p.x; b.y = p.y;
+    const pr = spacePair(b.id);
+    b.count = (pr && !b.mine) ? pr.count : 0;
+    b.last = (pr && !b.mine) ? pr.last_at : 0;
+    b.related = !!(pr && !b.mine && (pr.count || 0) >= SPACE_SIM.LINE_AT);
+    b.pulse = 0;
+    b.r = SPACE.baseR + Math.min(6, b.count * 0.7);
+    b.speed = (p.speed || spaceSpeed());
+    if (p.vx || p.vy) { b.vx = p.vx; b.vy = p.vy; spaceNorm(b); }
+    else spaceDir(b, Math.random() * Math.PI * 2);
+  });
+  SPACE.balls = balls;
+  SPACE.loaded = true;
+}
+function spaceEnter(room) {
+  if (!room || room === SPACE.room) return;
+  SPACE.room = room;
+  SPACE.sel = null;
+  if (SPACE.people[SPACE.me]) SPACE.people[SPACE.me].room = room;
+  jpost('/api/room', { room }).catch(() => {});
+  spaceChips();
+  spaceBuild();
+  SPACE.balls.forEach((b, i) => {
+    const p = spaceSeed(i);
+    b.x = p.x; b.y = p.y;
+    spaceDir(b, Math.random() * Math.PI * 2);
+  });
+  SPACE.heat = 1;
+  spaceInfo();
+  spaceStart();
+}
+function spaceInfo() {
+  const el = document.getElementById('spaceInfo');
+  if (!el) return;
+  const sel = SPACE.balls.find(b => b.id === SPACE.sel);
+  if (!sel) { el.innerHTML = '点小球 = 互动 · 左滑看最近互动过的人'; return; }
+  if (sel.mine) { el.innerHTML = '这是你（白边）'; return; }
+  const need = SPACE_SIM.LINE_AT - sel.count;
+  el.innerHTML = '<b style="color:' + escq(sel.color) + '">' + escq(sel.name) + '</b> · 互动 ' +
+    sel.count + ' 次 · ' + spaceAgo(sel.last) +
+    (need > 0 ? ' · 再 ' + need + ' 次连线' : ' · <span class="ok">已连线</span>');
+}
+function spaceSteer(a, b, k) {
+  const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 0.01;
+  a.vx += dx / d * k; a.vy += dy / d * k;
+  spaceNorm(a);
+}
+function spaceImpulse(target) {
+  const me = SPACE.balls.find(b => b.mine);
+  if (!me || !target) return;
+  spaceSteer(me, target, SPACE_SIM.CLICK_K * (me.speed || 1));
+  spaceSteer(target, me, SPACE_SIM.CLICK_K * (target.speed || 1));
+  SPACE.heat = 1;
+}
+async function spaceTouch(b) {
+  SPACE.sel = b.id;
+  const me = SPACE.balls.find(x => x.mine);
+  b.pulse = 1;                                     /* 每一次点击：缩放强调特效 */
+  if (me) me.pulse = Math.max(me.pulse || 0, 0.55);
+  spaceInfo();
+  try {
+    const r = await jpost('/api/poke', { target_id: b.id, username: b.name, room: SPACE.room });
+    const link = r && r.link;
+    if (link) {
+      const p = SPACE.pairs.find(x => x.a === link.a && x.b === link.b);
+      if (p) Object.assign(p, link); else SPACE.pairs.push(link);
+      b.count = link.count; b.last = link.last_at;
+      b.related = (link.count || 0) >= SPACE_SIM.LINE_AT;
+      b.r = SPACE.baseR + Math.min(6, b.count * 0.7);
+    }
+    /* 只在「刚刚连上」那一次给冲刺 —— 原来第 4、5 次点击还会再闪一遍，
+       视频里看起来就是同一个连线特效展示了两回。 */
+    if (b.count === SPACE_SIM.LINE_AT) spaceImpulse(b);
+    spaceInfo();
+    if (document.getElementById('spaceDrawer').classList.contains('on')) spaceRecent();
+  } catch (e) {
+    pokeToast('<span class="warn">这次互动没记上：' + escq(e.message) + '</span>');
+  }
+}
+function spaceWobble(b) {
+  const a = (Math.random() - 0.5) * SPACE_SIM.WALL_JITTER;
+  const c = Math.cos(a), s = Math.sin(a);
+  const vx = b.vx * c - b.vy * s;
+  const vy = b.vx * s + b.vy * c;
+  b.vx = vx; b.vy = vy;
+  spaceNorm(b);
+}
+function spaceStep(dt) {
+  const bs = SPACE.balls, W = SPACE.cssW, H = SPACE.cssH;
+  SPACE.heat = Math.max(0, SPACE.heat * 0.985);
+  const pull = 0.75 + SPACE.heat;
+  for (const b of bs) {
+    b.ax = 0; b.ay = 0;
+    b.pulse = Math.max(0, (b.pulse || 0) * Math.pow(SPACE_SIM.PULSE_DECAY, dt));
+  }
+  for (const p of SPACE.pairs) {                   /* 满 3 次连上线的：一股指向彼此的力 */
+    if ((p.count || 0) < SPACE_SIM.LINE_AT) continue;
+    const s = bs.find(b => b.id === p.a), t = bs.find(b => b.id === p.b);
+    if (!s || !t) continue;
+    const dx = t.x - s.x, dy = t.y - s.y, d = Math.hypot(dx, dy) || 0.01;
+    const k = (d - SPACE_SIM.SPRING_LEN) / d * SPACE_SIM.SPRING_K * pull * (s.speed || 1);
+    const k2 = (d - SPACE_SIM.SPRING_LEN) / d * SPACE_SIM.SPRING_K * pull * (t.speed || 1);
+    s.vx += dx * k; s.vy += dy * k;
+    t.vx -= dx * k2; t.vy -= dy * k2;
+  }
+  for (const b of bs) {                            /* 匀速：改完方向把速度长度拉回去 */
+    if (SPACE.drag === b) continue;
+    b.x += b.vx * dt; b.y += b.vy * dt;
+    spaceNorm(b);
+  }
+  for (const b of bs) {                            /* 撞边境：反弹 */
+    if (b.x < b.r) { b.x = b.r; b.vx = Math.abs(b.vx); spaceWobble(b); }
+    else if (b.x > W - b.r) { b.x = W - b.r; b.vx = -Math.abs(b.vx); spaceWobble(b); }
+    if (b.y < b.r) { b.y = b.r; b.vy = Math.abs(b.vy); spaceWobble(b); }
+    else if (b.y > H - b.r) { b.y = H - b.r; b.vy = -Math.abs(b.vy); spaceWobble(b); }
+  }
+  for (let i = 0; i < bs.length; i++) {            /* 撞到别的球：等质量弹性碰撞 */
+    for (let j = i + 1; j < bs.length; j++) {
+      const a = bs[i], b = bs[j];
+      let dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy);
+      const min = a.r + b.r;
+      if (d === 0) { dx = 0.01; d = 0.01; }
+      if (d >= min) continue;
+      const nx = dx / d, ny = dy / d;
+      const va = a.vx * nx + a.vy * ny, vb = b.vx * nx + b.vy * ny;
+      if (va - vb > 0) {
+        a.vx += (vb - va) * nx; a.vy += (vb - va) * ny;
+        b.vx += (va - vb) * nx; b.vy += (va - vb) * ny;
+      }
+      const push = (min - d) / 2 + 0.4;
+      a.x -= nx * push; a.y -= ny * push;
+      b.x += nx * push; b.y += ny * push;
+      spaceNorm(a); spaceNorm(b);
+      SPACE.heat = Math.max(SPACE.heat, 0.6);
+    }
+  }
+  for (const b of bs) {                            /* 撞完球再夹一次，别被挤到框外 */
+    if (b.x < b.r) { b.x = b.r; if (b.vx < 0) b.vx = -b.vx; }
+    else if (b.x > W - b.r) { b.x = W - b.r; if (b.vx > 0) b.vx = -b.vx; }
+    if (b.y < b.r) { b.y = b.r; if (b.vy < 0) b.vy = -b.vy; }
+    else if (b.y > H - b.r) { b.y = H - b.r; if (b.vy > 0) b.vy = -b.vy; }
+  }
+}
+function spaceDraw() {
+  const cv = spaceCanvas();
+  if (!cv || !SPACE.cssW) return;
+  const ctx = cv.getContext('2d'), W = SPACE.cssW, H = SPACE.cssH;
+  ctx.clearRect(0, 0, W, H);
+  if (!SPACE.balls.length) {
+    ctx.font = '13px "Microsoft YaHei",system-ui,sans-serif';
+    ctx.fillStyle = 'rgba(139,144,166,.75)';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('这间还没人，换一间看看', W / 2, H / 2);
+    return;
+  }
+  /* 连上线（满 3 次）：绿色主线 + 外发光 + 线上跑一颗光点。
+     原来那根 1px / 30% 白的线在深底上等于没画，连线是这一页的主角，得看得见。 */
+  const phase = (typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now()) / 1500;
+  SPACE.pairs.forEach((p, pi) => {
+    if ((p.count || 0) < SPACE_SIM.LINE_AT) return;
+    const s = SPACE.balls.find(b => b.id === p.a), t = SPACE.balls.find(b => b.id === p.b);
+    if (!s || !t) return;
+    /* 互动次数越多，线越实 */
+    const strong = Math.min(1, 0.55 + 0.15 * ((p.count || 0) - SPACE_SIM.LINE_AT));
+    ctx.save();
+    ctx.strokeStyle = 'rgba(61,220,132,' + strong.toFixed(3) + ')';
+    ctx.lineWidth = 2;
+    ctx.shadowColor = 'rgba(61,220,132,.9)';
+    ctx.shadowBlur = 12;
+    ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(t.x, t.y); ctx.stroke();
+    ctx.shadowBlur = 0;
+    /* 光点从一端跑到另一端：一眼看出"这两个人连着、在来往" */
+    const tt = (phase + pi * 0.37) % 1;
+    ctx.fillStyle = 'rgba(160,255,200,.95)';
+    ctx.beginPath();
+    ctx.arc(s.x + (t.x - s.x) * tt, s.y + (t.y - s.y) * tt, 2.8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  });
+  SPACE.balls.forEach(b => {
+    const sel = b.id === SPACE.sel;
+    const pl = b.pulse || 0;                        /* 点击后的缩放强调 */
+    const rr = b.r * (1 + 0.45 * pl);
+    if (pl > 0.02) {
+      ctx.strokeStyle = 'rgba(124,240,180,' + (0.80 * pl).toFixed(3) + ')';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(b.x, b.y, rr + 6 + 18 * (1 - pl), 0, Math.PI * 2); ctx.stroke();
+    }
+    if (sel) {
+      ctx.strokeStyle = 'rgba(124,240,180,.85)'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(b.x, b.y, rr + 7, 0, Math.PI * 2); ctx.stroke();
+    }
+    ctx.beginPath(); ctx.arc(b.x, b.y, rr, 0, Math.PI * 2);
+    /* 先描一圈底色再描彩边：账号颜色本身偏蓝时，蓝边也能看清 */
+    const edge = b.mine ? '#FFFFFF' : (b.count > 0 ? '#4ADE80' : '');
+    if (edge) { ctx.strokeStyle = '#0A1210'; ctx.lineWidth = 7; ctx.stroke(); }
+    ctx.fillStyle = b.color; ctx.fill();
+    if (edge) { ctx.strokeStyle = edge; ctx.lineWidth = b.mine ? 3 : 2.5; ctx.stroke(); }
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillStyle = sel ? '#E6F2EC' : 'rgba(231,233,242,.62)';
+    ctx.font = (sel ? 'bold 12px ' : '11px ') + '"Microsoft YaHei",system-ui,sans-serif';
+    ctx.fillText(b.name + (b.mine ? '（你）' : ''), b.x, b.y + rr + 5);
+  });
+}
+function spaceLoop(ts) {
+  const page = document.getElementById('p-everyone');
+  if (!page || page.hidden || !SPACE.loaded) { SPACE.raf = 0; SPACE.ts = 0; return; }
+  const prev = SPACE.ts || ts;
+  let dt = (ts - prev) / 16.67;
+  if (!isFinite(dt) || dt <= 0) dt = 1;
+  SPACE.ts = ts;
+  spaceStep(Math.max(0.4, Math.min(SPACE_SIM.MAX_DT, dt)));
+  spaceDraw();
+  SPACE.raf = requestAnimationFrame(spaceLoop);
+}
+function spaceStart() { if (!SPACE.raf) { SPACE.ts = 0; SPACE.raf = requestAnimationFrame(spaceLoop); } }
+function spacePos(e) {
+  const cv = spaceCanvas(), r = cv.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+function spaceHit(p) {
+  return SPACE.balls.find(b => Math.hypot(b.x - p.x, b.y - p.y) <= b.r + 8);
+}
+(function spaceBind() {
+  const cv = spaceCanvas();
+  if (!cv) return;
+  let moved = 0, down = null;
+  cv.addEventListener('pointerdown', e => {
+    const p = spacePos(e), hit = spaceHit(p);
+    down = hit; moved = 0;
+    if (hit && hit.mine) { SPACE.drag = hit; cv.setPointerCapture(e.pointerId); }
+  });
+  cv.addEventListener('pointermove', e => {
+    if (down) moved += Math.hypot(e.movementX || 0, e.movementY || 0);
+    if (SPACE.drag) {
+      const p = spacePos(e);
+      SPACE.drag.vx = p.x - SPACE.drag.x; SPACE.drag.vy = p.y - SPACE.drag.y;
+      SPACE.drag.x = Math.max(SPACE.drag.r, Math.min(SPACE.cssW - SPACE.drag.r, p.x));
+      SPACE.drag.y = Math.max(SPACE.drag.r, Math.min(SPACE.cssH - SPACE.drag.r, p.y));
+    }
+  });
+  cv.addEventListener('pointerup', e => {
+    if (SPACE.drag) {
+      if (Math.hypot(SPACE.drag.vx || 0, SPACE.drag.vy || 0) < 0.2) {
+        spaceDir(SPACE.drag, Math.random() * Math.PI * 2);
+      } else {
+        spaceNorm(SPACE.drag);
+      }
+      SPACE.drag = null; down = null; return;
+    }
+    if (!down) return;
+    if (moved < 8) {
+      if (down.mine) { SPACE.sel = down.id; spaceInfo(); spaceDraw(); }
+      else spaceTouch(down);
+    }
+    down = null;
+  });
+  window.addEventListener('resize', () => { if (SPACE.loaded) { spaceFit(); spaceDraw(); } });
+})();
+
+/* 最近互动过的人：右抽屉，这一页任意空白处左滑叫出来 */
+function spaceRecent() {
+  const box = document.getElementById('recentList');
+  if (!box) return;
+  const mine = SPACE.pairs.filter(p => (p.count || 0) > 0 && (p.a === SPACE.me || p.b === SPACE.me));
+  mine.sort((x, y) => (y.last_at || 0) - (x.last_at || 0));
+  if (!mine.length) { box.className = 'empty'; box.textContent = '还没有互动过：点房间里的球'; return; }
+  box.className = '';
+  box.innerHTML = mine.map(p => {
+    const other = p.a === SPACE.me ? p.b : p.a;
+    const who = SPACE.names[other] || SPACE.people[other] || { name: '用户 ' + other, color: '#7C8F88' };
+    const lined = (p.count || 0) >= SPACE_SIM.LINE_AT;
+    return '<div class="who"><span style="color:' + escq(who.color) + '">●</span>' +
+      '<b style="flex:1">' + escq(who.name) + '</b>' +
+      '<span class="meta">' + p.count + ' 次 · ' + spaceAgo(p.last_at) +
+      (lined ? ' · <span class="ok">已连线</span>' : '') + '</span></div>';
+  }).join('');
+}
+function spaceDrawer(open) {
+  const d = document.getElementById('spaceDrawer'), back = document.getElementById('spaceBack');
+  if (!d) return;
+  if (open) spaceRecent();
+  d.classList.toggle('on', !!open);
+  if (back) back.hidden = !open;
+}
+(function spaceGesture() {
+  const wrap = document.getElementById('spaceWrap');
+  if (!wrap) return;
+  let sx = 0, sy = 0, onBall = false, active = false;
+  wrap.addEventListener('pointerdown', e => {
+    sx = e.clientX; sy = e.clientY; active = true;
+    const cv = spaceCanvas();
+    if (cv) {
+      const r = cv.getBoundingClientRect();
+      onBall = !!spaceHit({ x: e.clientX - r.left, y: e.clientY - r.top });
+    }
+  }, true);
+  wrap.addEventListener('pointerup', e => {
+    if (!active) return;
+    active = false;
+    const dx = e.clientX - sx, dy = e.clientY - sy;
+    const d = document.getElementById('spaceDrawer');
+    const open = d && d.classList.contains('on');
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return;
+    if (dx < 0 && !open && !onBall) spaceDrawer(true);      /* 左滑：看最近互动过的人 */
+    else if (dx > 0 && open) spaceDrawer(false);            /* 右滑：收起来 */
+    onBall = false;
+  }, true);
+  const back = document.getElementById('spaceBack');
+  if (back) back.onclick = () => spaceDrawer(false);
+  const close = document.getElementById('drawerClose');
+  if (close) close.onclick = () => spaceDrawer(false);
+})();
+
+/* SSE */
+let cursor = 0, sse = null;
+function sseLog(s) {
+  const box = document.getElementById('sselog');
+  box.textContent = ('[' + new Date().toLocaleTimeString() + '] ' + s + ' | ' + box.textContent).slice(0, 3000);
+}
+function connectSSE() {
+  if (!window.EventSource) { sseLog('本浏览器不支持 EventSource'); return; }
+  sse = new EventSource('/events?since=' + cursor);
+  const bump = () => { cursor = cursor + 1; };
+  sse.addEventListener('push', () => { bump(); loadTodayVideo(); sseLog('收到 push 事件'); });
+  sse.addEventListener('action', () => { bump(); loadReview(); sseLog('收到 action 事件'); });
+  sse.addEventListener('notify', e => {
+    bump();
+    let txt = '';
+    try { txt = JSON.parse(e.data).data.text || ''; } catch (x) {}
+    sseLog('收到消息：' + txt);
+  });
+  sse.addEventListener('poke', e => {
+    bump();
+    let d = {};
+    try { d = (JSON.parse(e.data).data) || {}; } catch (x) {}
+    if (MY && d.from === MY.username) return;          /* 自己戳出去的，不重复提示 */
+    const broadcast = !d.to || d.to === '*';
+    if (!broadcast && (!MY || d.to !== MY.username)) { sseLog('有人戳了 ' + (d.to || '*')); return; }
+    pokeToast('<b>' + escq(d.from || '有人') + '</b> 戳了你一下' + (d.text ? '：' + escq(d.text) : ''), d.color);
+    sseLog('收到 poke 事件：' + (d.from || '') + ' -> ' + (d.to || '*'));
+    if (!document.getElementById('p-everyone').hidden) loadSpace();
+  });
+  sse.addEventListener('vote', () => {
+    bump();
+    sseLog('收到 vote 事件');
+    /* 票只属于正在播的那条，别人的票不动我这边的顺序 */
+  });
+  sse.onopen = () => sseLog('长连接已建立');
+  sse.onerror = () => { sseLog('连接中断，1.5 秒后重连'); sse.close(); setTimeout(connectSSE, 1500); };
+}
+
+/* 通知订阅（Web Push） */
+function b64ToU8(base64) {
+  const pad = '='.repeat((4 - base64.length % 4) % 4);
+  const s = (base64 + pad).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(s), out = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+  return out;
+}
+function pushSay(t, cls) {
+  const el = document.getElementById('pushState');
+  el.className = cls || 'empty';
+  el.textContent = t;
+}
+function fillPushUrl() {
+  const el = document.getElementById('pushUrl');
+  if (!el) return;
+  /* 页面已经是从 8788 打开的就照原样显示；否则用当前访问地址换个端口 */
+  el.textContent = location.protocol === 'https:' ? location.origin + '/'
+                                                   : 'https://' + location.hostname + ':8788/';
+}
+async function pushStatus() {
+  const secure = window.isSecureContext;
+  if (!('serviceWorker' in navigator)) return pushSay('此浏览器不支持 Service Worker');
+  if (!secure) return pushSay('当前不是安全上下文：请用 https 打开本页才能开通知', 'warn');
+  if (Notification.permission === 'granted') return pushSay('已允许通知（订阅可在下方重开）', 'ok');
+  pushSay('未开启 · 点「开启通知」并允许权限');
+}
+async function pushOn() {
+  try {
+    if (!window.isSecureContext) { alert('需要 HTTPS 才能开通知，请用 https://…:8788/ 打开'); return; }
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') { pushSay('你把权限拒了，通知发不出来', 'warn'); return; }
+    const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+    await navigator.serviceWorker.ready;
+    const key = await api('/api/push/key');
+    if (!key.public_key) { pushSay('服务端没有 VAPID 公钥', 'warn'); return; }
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: b64ToU8(key.public_key)
+    });
+    const r = await jpost('/api/push/subscribe', { subscription: sub.toJSON() });
+    pushSay('已开启通知 · 订阅数 ' + r.subs, 'ok');
+  } catch (e) { pushSay('开启失败：' + e.message, 'warn'); }
+}
+document.getElementById('pushOn').onclick = pushOn;
+document.getElementById('pushTest').onclick = async () => {
+  try { const r = await jpost('/api/push/test'); pushSay('测试结果：' + JSON.stringify(r), r.sent ? 'ok' : 'warn'); }
+  catch (e) { pushSay('测试失败：' + e.message, 'warn'); }
+};
+
+
+/* 可选本地 AI：登录后问一次；选了"跳过"记在 localStorage，以后可用头部按钮重开 */
+function aiDialog(force) {
+  return new Promise(async resolve => {
+    const box = document.getElementById('aiAsk');
+    if (!box) return resolve(true);
+    try {
+      const r = await fetch('/api/ai');
+      const j = await r.json();
+      if (j.on && !force) return resolve(true);
+      document.getElementById('aiBase').value = j.base || '';
+      const sg = j.suggest || {};
+      if (sg.base && !j.base) document.getElementById('aiBase').value = sg.base;
+      document.getElementById('aiMsg').textContent = '';
+    } catch (e) {}
+    if (!force && localStorage.getItem('mm_ai_asked') === '1') return resolve(true);
+    box.hidden = false; box.style.display = 'flex';
+    const close = v => {
+      box.hidden = true; box.style.display = 'none';
+      localStorage.setItem('mm_ai_asked', '1'); resolve(v);
+    };
+    document.getElementById('aiSkip').onclick = () => close(false);
+    document.getElementById('aiOk').onclick = async () => {
+      const msg = document.getElementById('aiMsg');
+      msg.textContent = '正在试连接 …';
+      const base = document.getElementById('aiBase').value.trim();
+      const key = document.getElementById('aiKey').value;
+      const model = document.getElementById('aiModel').value.trim();
+      try {
+        const r = await fetch('/api/ai', { method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ base: base, key: key, model: model, enabled: true }) });
+        if (!r.ok) throw new Error('保存失败 ' + r.status);
+        const t = await fetch('/api/ai/test', { method: 'POST' });
+        const tj = await t.json().catch(() => ({}));
+        if (!tj.ok) {
+          msg.innerHTML = '<span class="warn">连不上：' + (tj.msg || '检查地址和模型') + '</span>';
+          return;
+        }
+        msg.innerHTML = '<span class="ok">接上了 · ' + ((tj.models || [])[0] || '模型已就绪') + '</span>';
+        setTimeout(() => close(true), 900);
+      } catch (e) {
+        msg.innerHTML = '<span class="warn">' + e.message + '</span>';
+      }
+    };
+  });
+}
+const aiOpenBtn = document.getElementById('aiOpen');
+if (aiOpenBtn) aiOpenBtn.onclick = () => aiDialog(true);
+
+/* 启动：先过账号门槛，再拉数据与长连接 */
+(async () => {
+  await ensureAccount();
+  await aiDialog();
+  fillPushUrl();
+  health(); loadDreams(); loadTodayVideo(); loadNotes(); pushStatus();
+  activateTab((location.hash || '').replace('#', ''), false);
+  if (location.search.indexOf('nosse') >= 0) {
+    document.getElementById('sselog').textContent = '（截图模式：未开长连接）';
+  } else {
+    connectSSE();
+  }
+})();
+</script>
+</body>
+</html>
