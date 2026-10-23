@@ -190,10 +190,22 @@ def make_icons(res_dir: Path):
     made = 0
     for folder, size in (('mipmap-mdpi', 48), ('mipmap-hdpi', 72), ('mipmap-xhdpi', 96),
                          ('mipmap-xxhdpi', 144), ('mipmap-xxxhdpi', 192)):
-        c = Canvas(size)
-        c.rect(0, 0, size, size, dark, radius=size * 0.22)     # 深色圆角底
-        cat_mark(c, pink, eye=dark, pad=0.20)
-        write_png(res_dir / folder / 'ic_launcher.png', size, c.down())
+        _src = Path(__file__).resolve().parent / 'assets' / 'icon_src.png'
+        if _src.exists():
+            from PIL import Image as _Im, ImageDraw as _ID
+            _im = _Im.open(_src).convert('RGBA').resize((size, size), _Im.LANCZOS)
+            _mk = _Im.new('L', (size, size), 0)
+            _ID.Draw(_mk).rounded_rectangle([0, 0, size - 1, size - 1],
+                                            radius=int(size * 0.225), fill=255)
+            _out = _Im.new('RGBA', (size, size), (0, 0, 0, 0))
+            _out.paste(_im, (0, 0), _mk)
+            (res_dir / folder).mkdir(parents=True, exist_ok=True)
+            _out.save(res_dir / folder / 'ic_launcher.png')
+        else:
+            c = Canvas(size)
+            c.rect(0, 0, size, size, dark, radius=size * 0.22)
+            cat_mark(c, pink, eye=dark, pad=0.20)
+            write_png(res_dir / folder / 'ic_launcher.png', size, c.down())
         made += 1
     for folder, size in (('drawable-mdpi', 24), ('drawable-hdpi', 36),
                          ('drawable-xhdpi', 48), ('drawable-xxhdpi', 72)):
